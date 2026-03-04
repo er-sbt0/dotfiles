@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Web Editor
 Comment=Launch Web Editor
-Exec=/usr/bin/google-chrome --class=editor --app=http://localhost:3000/view/general-todo --user-data-dir=/home/eransa/.config/web-editor --no-first-run --no-default-browser-check --disable-background-networking --disable-component-update --disable-default-apps --disable-sync --password-store=basic --disable-extensions 
+Exec=/usr/bin/google-chrome --class=editor --app=http://localhost:3000 --user-data-dir=/home/eransa/.config/web-editor --no-first-run --no-default-browser-check --disable-background-networking --disable-component-update --disable-default-apps --disable-sync --password-store=basic --disable-extensions 
 Icon=/home/eransa/_/imgs/code.png
 Terminal=false
 Type=Application
