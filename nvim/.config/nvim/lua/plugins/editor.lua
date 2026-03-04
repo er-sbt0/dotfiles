@@ -1118,6 +1118,11 @@ return {
 						{
 							"_G.clipboard_icon",
 						},
+						{
+							function() return _G.lsp_progress_status and _G.lsp_progress_status() or "" end,
+							cond = function() return _G.lsp_progress_status ~= nil and _G.lsp_progress_status() ~= "" end,
+							color = { fg = "#a4beea" },
+						},
 					},
 					lualine_e = {},
 					lualine_x = { "encoding", "fileformat", "filetype" },

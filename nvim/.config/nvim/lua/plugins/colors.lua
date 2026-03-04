@@ -96,7 +96,7 @@ return {
 		end,
 	},
 	{
-		"lomes0/chalk.nvim",
+		dir = vim.fn.expand("~/code/chalk.nvim"),
 		lazy = false,
 		priority = 1000,
 		config = function()

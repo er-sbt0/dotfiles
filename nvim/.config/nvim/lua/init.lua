@@ -692,7 +692,7 @@ vim.keymap.set("n", "<lt>e", function()
 end, { desc = "Go to end of current block" })
 
 -- LSP performance optimizations
-vim.lsp.set_log_level("off") -- Disable LSP logging for better performance
+vim.lsp.log.set_level("off") -- Disable LSP logging for better performance
 
 vim.lsp.enable({ "clangd", "pylsp", "tsserver", "rust-analyzer", "lua_ls" })
 
@@ -717,49 +717,69 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		vim.keymap.set("n", "<F2>", "<cmd>lua vim.lsp.buf.rename()<cr>", lsp_opts)
 		vim.keymap.set({ "n", "x" }, "<F3>", "<cmd>lua vim.lsp.buf.format({async = true})<cr>", lsp_opts)
 		vim.keymap.set("n", "gca", "<cmd>lua vim.lsp.buf.code_action()<cr>", lsp_opts)
+		-- nvim-0.12: run code lenses
+		vim.keymap.set("n", "<leader>cl", vim.lsp.codelens.run, lsp_opts)
 	end,
 })
 
-local progress = vim.defaulttable()
+local lsp_progress = {} -- [client_id][token] = { title, percent }
+local lsp_client_names = {} -- [client_id] = name, stored at begin to avoid hot-path lookups
+
+function _G.lsp_progress_status()
+	local parts = {}
+	for client_id, tokens in pairs(lsp_progress) do
+		local name = lsp_client_names[client_id] or tostring(client_id)
+		local items = {}
+		for _, p in pairs(tokens) do
+			local label = p.title or "…"
+			if p.percent then
+				label = label .. " " .. p.percent .. "%%"
+			end
+			table.insert(items, label)
+		end
+		table.insert(parts, name .. ": " .. table.concat(items, ", "))
+	end
+	if #parts == 0 then return "" end
+	return "[" .. table.concat(parts, " | ") .. "] "
+end
+
 vim.api.nvim_create_autocmd("LspProgress", {
-	---@param ev {data: {client_id: integer, params: lsp.ProgressParams}}
+	group = vim.api.nvim_create_augroup("my.lsp.config", { clear = true }),
 	callback = function(ev)
-		local client = vim.lsp.get_client_by_id(ev.data.client_id)
-		local value = ev.data.params.value --[[@as {percentage?: number, title?: string, message?: string, kind: "begin" | "report" | "end"}]]
-		if not client or type(value) ~= "table" then
+		local value = ev.data.params.value
+		local client_id = ev.data.client_id
+		local token = ev.data.params.token
+
+		if value.kind == "begin" then
+			local client = vim.lsp.get_client_by_id(client_id)
+			if not client then return end
+			lsp_client_names[client_id] = client.name
+			if not lsp_progress[client_id] then
+				lsp_progress[client_id] = {}
+			end
+			lsp_progress[client_id][token] = {
+				percent = value.percentage,
+				title = value.title,
+			}
+			vim.cmd("redrawstatus!")
 			return
 		end
-		local p = progress[client.id]
 
-		for i = 1, #p + 1 do
-			if i == #p + 1 or p[i].token == ev.data.params.token then
-				p[i] = {
-					token = ev.data.params.token,
-					msg = ("[%3d%%] %s%s"):format(
-						value.kind == "end" and 100 or value.percentage or 100,
-						value.title or "",
-						value.message and (" **%s**"):format(value.message) or ""
-					),
-					done = value.kind == "end",
-				}
-				break
+		if not lsp_progress[client_id] or not lsp_progress[client_id][token] then return end
+
+		if value.kind == "report" then
+			local p = lsp_progress[client_id][token]
+			p.percent = value.percentage or p.percent
+			p.title = value.title or p.title
+			vim.cmd("redrawstatus!")
+		elseif value.kind == "end" then
+			lsp_progress[client_id][token] = nil
+			if not next(lsp_progress[client_id]) then
+				lsp_progress[client_id] = nil
+				lsp_client_names[client_id] = nil
 			end
+			vim.cmd("redrawstatus!")
 		end
-
-		local msg = {} ---@type string[]
-		progress[client.id] = vim.tbl_filter(function(v)
-			return table.insert(msg, v.msg) or not v.done
-		end, p)
-
-		local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
-		vim.notify(table.concat(msg, "\n"), 0, {
-			id = "lsp_progress",
-			title = client.name,
-			opts = function(notif)
-				notif.icon = #progress[client.id] == 0 and " "
-					or spinner[math.floor(vim.uv.hrtime() / (1e6 * 80)) % #spinner + 1]
-			end,
-		})
 	end,
 })
 
@@ -808,6 +828,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 				-- Fallback: enable omnifunc for older API
 				vim.bo[args.buf].omnifunc = "v:lua.vim.lsp.omnifunc"
 			end
+		end
+
+		-- nvim-0.12: code lenses displayed as virtual lines
+		if client:supports_method("textDocument/codeLens") then
+			vim.lsp.codelens.enable(true, { bufnr = args.buf })
 		end
 
 		-- client.server_capabilities.documentHighlightProvider = true
