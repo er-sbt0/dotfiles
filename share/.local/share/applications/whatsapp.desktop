@@ -6,4 +6,4 @@ Icon=/home/eransa/_/imgs/whatsapp2.png
 Terminal=false
 Type=Application
 Categories=Network;
-StartupWMClass=whatsapp
+StartupWMClass=chrome-web.whatsapp.com__-Default

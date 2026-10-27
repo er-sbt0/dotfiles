@@ -194,3 +194,15 @@ export PATH
 
 # Initialize starship prompt immediately (slower startup but instant prompt)
 eval "$(starship init zsh)"
+
+# Added by flyctl installer
+export FLYCTL_INSTALL="/home/eransa/.fly"
+export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+# opencode
+export PATH=/home/eransa/.opencode/bin:$PATH
+
+# Pi
+export PATH="/home/eransa/.local/share/pi-node/node-v22.23.1-linux-x64/bin:$PATH"
+
+if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi

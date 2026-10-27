@@ -6,4 +6,4 @@ Icon=/home/eransa/_/imgs/bank2.png
 Terminal=false
 Type=Application
 Categories=Network;
-StartupWMClass=bank
+StartupWMClass=chrome-www.bankotsar.co.il__-Default

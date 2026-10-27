@@ -39,3 +39,5 @@ git:
     colorArg: always
     pager: delta --light --paging=never --diff-so-fancy --true-color=always 
   branchLogCmd: "git log --perl-regexp --author='^((?!builder).*)$' --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium --oneline {{branchName}} --"
+  log:
+    firstParent: true
